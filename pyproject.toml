@@ -12,6 +12,7 @@ dependencies = [
     "langchain-community>=0.4.2",
     "langchain-ollama>=1.1.0",
     "langgraph>=1.2.9",
+    "loguru>=0.7.3",
     "psycopg2-binary>=2.9.12",
     "pydantic>=2.13.4",
     "pymupdf>=1.28.0",
