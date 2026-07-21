@@ -1,0 +1,29 @@
+# Environments
+.env
+.venv
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+
+# IDEs and Editors
+.idea/
+.vscode/
+*.swp
+
+# Testing
+.pytest_cache/
+htmlcov/
+.coverage
+
+# Project specific data and DB
+data/
+chroma_db/
+qdrant_data/
+
+# Logs
+*.log
+
+# OS generated files
+.DS_Store
+Thumbs.db
