@@ -4,8 +4,9 @@ api/main.py
 FastAPI application entry point.
 
 Endpoints:
-  GET  /         → Health check
-  POST /analyze  → Triggers the LangGraph pipeline and returns the final report
+  GET  /                      → Health check
+  POST /upload-and-analyze    → Upload a PDF and run the full LangGraph pipeline
+  POST /analyze               → Run pipeline with dummy text (for testing)
 """
 
 from __future__ import annotations
@@ -14,7 +15,7 @@ import logging
 import sys
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, File, HTTPException, UploadFile
 from loguru import logger
 from pydantic import BaseModel
 
@@ -25,7 +26,6 @@ from api.schemas.contract_schema import ContractReport
 # Loguru configuration
 # ─────────────────────────────────────────────
 
-# Remove the default loguru sink and replace with a formatted one
 logger.remove()
 logger.add(
     sys.stderr,
@@ -52,7 +52,6 @@ class _InterceptHandler(logging.Handler):
         logger.opt(depth=depth, exception=record.exc_info).log(level, record.getMessage())
 
 
-# Intercept uvicorn / fastapi stdlib loggers
 for _name in ("uvicorn", "uvicorn.error", "uvicorn.access", "fastapi"):
     _log = logging.getLogger(_name)
     _log.handlers = [_InterceptHandler()]
@@ -89,64 +88,26 @@ app = FastAPI(
 
 
 class AnalyzeRequest(BaseModel):
-    """Request body for POST /analyze."""
+    """Request body for POST /analyze (dummy mode)."""
 
     document_name: str = "sample_contract.pdf"
-    # Real implementation: file upload via FastAPI's UploadFile.
-    # For now, only the document name is sent; DocumentReader generates dummy text.
 
 
 class AnalyzeResponse(BaseModel):
-    """Response body for POST /analyze."""
+    """Response body for analysis endpoints."""
 
     status: str
     report: ContractReport
 
 
 # ─────────────────────────────────────────────
-# Endpoints
+# Helper
 # ─────────────────────────────────────────────
 
 
-@app.get("/", summary="Health check")
-async def health_check() -> dict:
-    """Returns a simple status confirming the API is running."""
-    return {"status": "ok", "message": "Smart Contract Audit API is running."}
-
-
-@app.post(
-    "/analyze",
-    response_model=AnalyzeResponse,
-    summary="Contract analysis",
-    description=(
-        "Triggers the LangGraph pipeline for the given document name. "
-        "Pipeline: DocumentReader → ClauseExtractor → RiskAnalyzer → "
-        "Judge (retry loop) → ReportGenerator. "
-        "Result is returned as a Pydantic-validated ContractReport."
-    ),
-)
-async def analyze_document(request: AnalyzeRequest) -> AnalyzeResponse:
-    """
-    Runs the LangGraph pipeline and returns the analysis report.
-
-    - **document_name**: Name of the document to analyse (stub mode: used as label only).
-    """
-    logger.info("POST /analyze received — document: {}", request.document_name)
-
-    # Initial state
-    initial_state: dict = {
-        "document_name": request.document_name,
-        "raw_text": "",
-        "clauses": [],
-        "analyzed_risks": [],
-        "validation_passed": False,
-        "retry_count": 0,
-        "judge_feedback": "",
-        "final_report": None,
-    }
-
+def _run_pipeline(initial_state: dict) -> AnalyzeResponse:
+    """Invokes the LangGraph pipeline and returns the typed response."""
     try:
-        # Run the LangGraph pipeline (synchronous invoke; can be moved to BackgroundTasks later)
         final_state: dict = compiled_graph.invoke(initial_state)
     except Exception as exc:
         logger.exception("LangGraph pipeline error: {}", exc)
@@ -163,5 +124,93 @@ async def analyze_document(request: AnalyzeRequest) -> AnalyzeResponse:
         len(report.risky_clauses),
         report.overall_risk_score,
     )
-
     return AnalyzeResponse(status="success", report=report)
+
+
+# ─────────────────────────────────────────────
+# Endpoints
+# ─────────────────────────────────────────────
+
+
+@app.get("/", summary="Health check")
+async def health_check() -> dict:
+    """Returns a simple status confirming the API is running."""
+    return {"status": "ok", "message": "Smart Contract Audit API is running."}
+
+
+@app.post(
+    "/upload-and-analyze",
+    response_model=AnalyzeResponse,
+    summary="Upload PDF and analyse",
+    description=(
+        "Accepts a PDF file upload, extracts text using PyMuPDF, "
+        "and runs the full LangGraph analysis pipeline. "
+        "Returns the Pydantic-validated ContractReport."
+    ),
+)
+async def upload_and_analyze(file: UploadFile = File(...)) -> AnalyzeResponse:
+    """
+    Uploads a PDF contract and runs the full analysis pipeline.
+
+    - **file**: A PDF file to analyse.
+    """
+    if not file.filename:
+        raise HTTPException(status_code=400, detail="No file provided.")
+
+    if not file.filename.lower().endswith(".pdf"):
+        raise HTTPException(
+            status_code=400,
+            detail="Only PDF files are supported. Received: " + file.filename,
+        )
+
+    file_bytes = await file.read()
+    logger.info(
+        "POST /upload-and-analyze — file: {} ({} bytes)",
+        file.filename,
+        len(file_bytes),
+    )
+
+    initial_state: dict = {
+        "document_name": file.filename,
+        "file_bytes": file_bytes,
+        "raw_text": "",
+        "clauses": [],
+        "analyzed_risks": [],
+        "validation_passed": False,
+        "retry_count": 0,
+        "judge_feedback": "",
+        "final_report": None,
+    }
+
+    return _run_pipeline(initial_state)
+
+
+@app.post(
+    "/analyze",
+    response_model=AnalyzeResponse,
+    summary="Analyse with dummy text",
+    description=(
+        "Runs the LangGraph pipeline using built-in dummy text. "
+        "Use this endpoint for testing without uploading a file."
+    ),
+)
+async def analyze_document(request: AnalyzeRequest) -> AnalyzeResponse:
+    """
+    Runs the LangGraph pipeline with dummy text (for testing).
+
+    - **document_name**: Label for the document (dummy mode).
+    """
+    logger.info("POST /analyze received — document: {}", request.document_name)
+
+    initial_state: dict = {
+        "document_name": request.document_name,
+        "raw_text": "",
+        "clauses": [],
+        "analyzed_risks": [],
+        "validation_passed": False,
+        "retry_count": 0,
+        "judge_feedback": "",
+        "final_report": None,
+    }
+
+    return _run_pipeline(initial_state)
