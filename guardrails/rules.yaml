@@ -1,0 +1,47 @@
+# ──────────────────────────────────────────────────────────────────
+# Guardrails — Deterministic Rule Definitions
+# ──────────────────────────────────────────────────────────────────
+# These rules are evaluated by the Judge agent in plain Python.
+# No LLM is involved — this layer is fast and hallucination-proof.
+#
+# Each rule maps to a clause_type and defines a condition that
+# must be satisfied. If the condition fails, the Judge flags a
+# violation and sends the clause back to the RiskAnalyzer.
+# ──────────────────────────────────────────────────────────────────
+
+rules:
+  - id: "termination_notice_minimum"
+    clause_type: "termination"
+    check: "notice_period_days >= 15"
+    severity: "high"
+    message: "The termination notice period is below the legal minimum (15 days)."
+
+  - id: "penalty_clause_missing"
+    clause_type: "penalty"
+    check: "clause_present == true"
+    severity: "medium"
+    message: "No penalty clause was found in the contract."
+
+  - id: "no_liability_cap"
+    clause_type: "liability"
+    check: "cap_amount is not null"
+    severity: "high"
+    message: "No upper cap on liability has been specified."
+
+  - id: "confidentiality_duration_missing"
+    clause_type: "confidentiality"
+    check: "duration_specified == true"
+    severity: "medium"
+    message: "Confidentiality obligation has no defined duration (indefinite)."
+
+  - id: "governing_law_missing"
+    clause_type: "governing_law"
+    check: "clause_present == true"
+    severity: "medium"
+    message: "No governing law clause was found in the contract."
+
+  - id: "auto_renewal_without_notice"
+    clause_type: "renewal"
+    check: "notice_before_renewal == true"
+    severity: "medium"
+    message: "Contract auto-renews without requiring advance notice."
