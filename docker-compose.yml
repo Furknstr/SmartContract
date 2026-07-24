@@ -1,0 +1,50 @@
+# ──────────────────────────────────────────────────────────────────
+# Smart Contract Audit — Docker Compose
+# ──────────────────────────────────────────────────────────────────
+# Services:
+#   - postgres : Stores audit reports and document metadata
+#   - chromadb : Vector database for standard clause embeddings
+#
+# Ollama is NOT containerised here — it runs natively on the host
+# and is accessible at http://localhost:11434 by default.
+# ──────────────────────────────────────────────────────────────────
+
+services:
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: audit_postgres
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: audit_user
+      POSTGRES_PASSWORD: audit_pass
+      POSTGRES_DB: contract_audit
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U audit_user -d contract_audit"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  chromadb:
+    image: chromadb/chroma:latest
+    container_name: audit_chromadb
+    restart: unless-stopped
+    ports:
+      - "8100:8000"
+    volumes:
+      - chromadata:/chroma/chroma
+    environment:
+      - IS_PERSISTENT=TRUE
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/heartbeat"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+volumes:
+  pgdata:
+  chromadata:

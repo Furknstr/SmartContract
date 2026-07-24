@@ -29,4 +29,5 @@ qdrant_data/
 Thumbs.db
 
 #Personal files
-Structure/
+personal/
+models/
