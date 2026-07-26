@@ -232,6 +232,7 @@ def risk_analyzer_node(state: dict) -> dict:
     Analyses each clause for risk using Ollama LLM + ChromaDB RAG.
 
     Falls back to keyword matching if Ollama is unavailable.
+    During a retry loop, only re-analyzes clauses that were explicitly flagged by the Judge.
 
     Args:
         state: Current AgentState. Reads "clauses" and "judge_feedback" fields.
@@ -244,16 +245,23 @@ def risk_analyzer_node(state: dict) -> dict:
         }
     """
     retry_count: int = state.get("retry_count", 0)
+    previous_risks: list[dict] = state.get("analyzed_risks", [])
+    
+    flagged_ids: set[str] = set()
 
     if retry_count == 0:
         logger.info("[RiskAnalyzer] Agent running — starting initial analysis.")
     else:
         feedback = state.get("judge_feedback", "")
+        # Extract clause IDs like "clause_006" from the Judge's feedback
+        flagged_ids = set(re.findall(r"clause_\d{3}", feedback))
+        
         logger.info(
             "[RiskAnalyzer] Re-analysis (attempt {}) — Judge feedback: {}",
             retry_count,
             feedback,
         )
+        logger.info("[RiskAnalyzer] Only re-analyzing {} flagged clause(s).", len(flagged_ids))
 
     clauses: list[dict] = state.get("clauses", [])
     analyzed_risks: list[dict] = []
@@ -262,6 +270,16 @@ def risk_analyzer_node(state: dict) -> dict:
     for i, clause in enumerate(clauses):
         clause_text = clause["text"]
         clause_id = clause["clause_id"]
+
+        # -------------------------------------------------------------
+        # OPTIMIZATION: If this is a retry and this clause wasn't flagged,
+        # skip LLM processing and reuse the previous result to save time.
+        # -------------------------------------------------------------
+        if retry_count > 0 and clause_id not in flagged_ids:
+            prev_result = next((r for r in previous_risks if r["clause_id"] == clause_id), None)
+            if prev_result:
+                analyzed_risks.append(prev_result)
+                continue
 
         logger.info(
             "[RiskAnalyzer] Analyzing clause {}/{}: {} ({}...)",
@@ -278,8 +296,13 @@ def risk_analyzer_node(state: dict) -> dict:
             # Step 1: RAG retrieval
             standard_clauses = _query_chromadb(clause_text)
 
-            # Step 2: LLM analysis
-            analysis = _call_ollama(clause_text, standard_clauses)
+            # Step 2: LLM analysis (pass the feedback so the LLM knows what to fix if it's a retry)
+            # We append the feedback to the prompt for the specific flagged clause
+            prompt_text = clause_text
+            if retry_count > 0 and clause_id in flagged_ids:
+                prompt_text += f"\n\n[CRITICAL JUDGE FEEDBACK TO FIX]: {feedback}"
+                
+            analysis = _call_ollama(prompt_text, standard_clauses)
 
             if analysis is None and ollama_available is None:
                 ollama_available = False
