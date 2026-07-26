@@ -41,11 +41,14 @@ class AgentState(TypedDict):
 
     # Input
     document_name: str
-    raw_text: str           # Output of DocumentReader
+    file_bytes: bytes | None     # Raw PDF bytes from UploadFile (set by FastAPI endpoint)
+    file_path: str | None        # Local file path alternative (for testing)
+    raw_text: str                # Output of DocumentReader
 
     # Intermediate layers
     clauses: list[dict]          # ClauseExtractor output: [{"clause_id": ..., "text": ...}, ...]
     analyzed_risks: list[dict]   # RiskAnalyzer output: [{"clause_id": ..., "risk_level": ..., ...}, ...]
+    page_count: int              # Number of pages extracted by DocumentReader
 
     # Control flow
     validation_passed: bool  # Judge decision: True → generate report, False → re-analyse

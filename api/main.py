@@ -173,6 +173,8 @@ async def upload_and_analyze(file: UploadFile = File(...)) -> AnalyzeResponse:
     initial_state: dict = {
         "document_name": file.filename,
         "file_bytes": file_bytes,
+        "file_path": None,
+        "page_count": 0,
         "raw_text": "",
         "clauses": [],
         "analyzed_risks": [],
@@ -204,6 +206,9 @@ async def analyze_document(request: AnalyzeRequest) -> AnalyzeResponse:
 
     initial_state: dict = {
         "document_name": request.document_name,
+        "file_bytes": None,
+        "file_path": None,
+        "page_count": 0,
         "raw_text": "",
         "clauses": [],
         "analyzed_risks": [],
