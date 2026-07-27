@@ -83,8 +83,12 @@ def document_reader_node(state: dict) -> dict:
     """
     Reads the raw document and converts it to plain text.
 
-    Checks state for "file_bytes" or "file_path". If neither exists,
-    falls back to dummy text for backward compatibility with stubs.
+    Priority order:
+      1. If raw_text is already set in state (e.g., injected by evaluation
+         harness or pre-processing step) — use it directly, skip file reading.
+      2. If file_bytes is set — extract text from uploaded PDF bytes.
+      3. If file_path is set — extract text from a local PDF path.
+      4. Fallback: dummy text for backward compatibility with test_pipeline.py.
 
     Args:
         state: Current AgentState.
@@ -94,6 +98,17 @@ def document_reader_node(state: dict) -> dict:
     """
     doc_name = state.get("document_name", "N/A")
     logger.info("[DocumentReader] Agent running — reading document: {}", doc_name)
+
+    # ── Fast-path: raw_text already provided ────────────────────────────────
+    existing_raw_text: str = state.get("raw_text", "")
+    if existing_raw_text.strip():
+        logger.info(
+            "[DocumentReader] raw_text already set ({} chars) — skipping file read.",
+            len(existing_raw_text),
+        )
+        page_count: int = state.get("page_count", 1) or 1
+        return {"raw_text": existing_raw_text, "page_count": page_count}
+    # ────────────────────────────────────────────────────────────────────────
 
     file_bytes: bytes | None = state.get("file_bytes")
     file_path: str | None = state.get("file_path")

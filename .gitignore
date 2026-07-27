@@ -17,9 +17,12 @@ htmlcov/
 .coverage
 
 # Project specific data and DB
-data/
+data/test_set/
 chroma_db/
 qdrant_data/
+
+# Evaluation output
+evaluation/results/
 
 # Logs
 *.log
