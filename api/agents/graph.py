@@ -14,10 +14,11 @@ Pipeline flow:
 
 from __future__ import annotations
 
+from typing import TypedDict
+
 from langgraph.graph import END, StateGraph
 from langgraph.graph.state import CompiledStateGraph
 from loguru import logger
-from typing import TypedDict
 
 from api.agents.clause_extractor import clause_extractor_node
 from api.agents.document_reader import document_reader_node

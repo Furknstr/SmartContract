@@ -27,7 +27,7 @@ import json
 import os
 import sys
 from dataclasses import asdict, dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from loguru import logger
 
@@ -358,7 +358,7 @@ def _write_json_report(aggregate: AggregateResult) -> str:
     path = os.path.join(RESULTS_DIR, "evaluation_report.json")
 
     report = {
-        "generated_at": datetime.now(timezone.utc).isoformat(),
+        "generated_at": datetime.now(UTC).isoformat(),
         "total_contracts": aggregate.total_contracts,
         "contracts_with_errors": aggregate.contracts_with_errors,
         "aggregate_metrics": {
@@ -396,7 +396,7 @@ def _write_summary_markdown(aggregate: AggregateResult) -> str:
     lines: list[str] = [
         "# Evaluation Results — Smart Contract Audit System",
         "",
-        f"**Generated at:** {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S UTC')}",
+        f"**Generated at:** {datetime.now(UTC).strftime('%Y-%m-%d %H:%M:%S UTC')}",
         f"**Test contracts:** {aggregate.total_contracts}",
         f"**Contracts with errors:** {aggregate.contracts_with_errors}",
         "",
