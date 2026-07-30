@@ -1,7 +1,7 @@
 [project]
 name = "smart-contract-audit"
 version = "0.1.0"
-description = "Add your description here"
+description = "AI-powered contract analysis system using LangGraph agents, RAG, and semantic guardrails"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
@@ -13,6 +13,7 @@ dependencies = [
     "langchain-community>=0.4.2",
     "langchain-ollama>=1.1.0",
     "langgraph>=1.2.9",
+    "langsmith>=0.3.0",
     "loguru>=0.7.3",
     "psycopg2-binary>=2.9.12",
     "pydantic>=2.13.4",
@@ -24,3 +25,57 @@ dependencies = [
     "sqlalchemy>=2.0.51",
     "uvicorn>=0.51.0",
 ]
+
+[dependency-groups]
+dev = [
+    "ruff>=0.11.0",
+    "pytest>=8.0.0",
+    "mypy>=1.15.0",
+]
+
+# ─────────────────────────────────────────────
+# Ruff (linting + formatting)
+# ─────────────────────────────────────────────
+
+[tool.ruff]
+target-version = "py311"
+line-length = 120
+
+[tool.ruff.lint]
+select = [
+    "E",    # pycodestyle errors
+    "W",    # pycodestyle warnings
+    "F",    # pyflakes
+    "I",    # isort (import sorting)
+    "UP",   # pyupgrade
+    "B",    # flake8-bugbear
+    "SIM",  # flake8-simplify
+]
+ignore = [
+    "E501",   # line too long (handled by formatter)
+    "B008",   # do not perform function calls in argument defaults
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["api", "rag", "db", "evaluation"]
+
+# ─────────────────────────────────────────────
+# Pytest
+# ─────────────────────────────────────────────
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+
+# ─────────────────────────────────────────────
+# Mypy
+# ─────────────────────────────────────────────
+
+[tool.mypy]
+python_version = "3.11"
+warn_return_any = true
+warn_unused_configs = true
+ignore_missing_imports = true
+

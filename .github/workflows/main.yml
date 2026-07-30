@@ -1,0 +1,53 @@
+# ──────────────────────────────────────────────────────────────────
+# CI/CD Pipeline — Smart Contract Audit
+# ──────────────────────────────────────────────────────────────────
+# Runs on every push and PR to main.
+# Steps: Lint → Format Check → Type Check → Unit Tests
+# ──────────────────────────────────────────────────────────────────
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  lint-and-test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.12"]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+
+      - name: Set up Python ${{ matrix.python-version }}
+        run: uv python install ${{ matrix.python-version }}
+
+      - name: Install dependencies
+        run: uv sync --all-extras --dev
+
+      - name: Lint with Ruff
+        run: uv run ruff check .
+
+      - name: Check formatting with Ruff
+        run: uv run ruff format --check .
+
+      - name: Type check with mypy
+        run: uv run mypy api/ --ignore-missing-imports
+        continue-on-error: true   # Soft fail — informational only
+
+      - name: Run tests
+        run: uv run pytest tests/ -v --tb=short
+        env:
+          # Prevent tests from trying to connect to real services
+          OLLAMA_BASE_URL: "http://localhost:11434"
+          CHROMA_HOST: "localhost"
+          CHROMA_PORT: "8100"
+          DATABASE_URL: "sqlite:///test.db"
