@@ -104,11 +104,11 @@ def build_graph() -> CompiledStateGraph:
     graph = StateGraph(AgentState)  # type: ignore[type-var]
 
     # Register nodes
-    graph.add_node("document_reader", document_reader_node)
-    graph.add_node("clause_extractor", clause_extractor_node)
-    graph.add_node("risk_analyzer", risk_analyzer_node)
-    graph.add_node("judge", judge_node)
-    graph.add_node("report_generator", report_generator_node)
+    graph.add_node("document_reader", document_reader_node)  # type: ignore[type-var]
+    graph.add_node("clause_extractor", clause_extractor_node)  # type: ignore[type-var]
+    graph.add_node("risk_analyzer", risk_analyzer_node)  # type: ignore[type-var]
+    graph.add_node("judge", judge_node)  # type: ignore[type-var]
+    graph.add_node("report_generator", report_generator_node)  # type: ignore[type-var]
 
     # Define edges — linear flow
     graph.set_entry_point("document_reader")

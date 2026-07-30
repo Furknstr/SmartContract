@@ -116,9 +116,10 @@ def _query_chromadb(clause_text: str, top_k: int = RAG_TOP_K) -> list[dict]:
         )
 
         standard_clauses = []
-        if results and results.get("documents"):
-            docs = results["documents"][0]
-            metas = results["metadatas"][0] if results.get("metadatas") else [{}] * len(docs)
+        if results and results.get("documents") is not None:
+            docs: list[str] = results["documents"][0]  # type: ignore[index]
+            raw_metas = results.get("metadatas")
+            metas = raw_metas[0] if raw_metas is not None else [{}] * len(docs)  # type: ignore[index]
 
             for doc, meta in zip(docs, metas):  # noqa: B905
                 standard_clauses.append(
@@ -194,7 +195,7 @@ def _call_ollama(clause_text: str, standard_clauses: list[dict]) -> dict | None:
         if parsed["risk_level"] not in ("low", "medium", "high"):
             parsed["risk_level"] = "low"
 
-        return parsed
+        return dict(parsed)
 
     except httpx.ConnectError:
         logger.warning(

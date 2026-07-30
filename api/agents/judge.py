@@ -48,7 +48,7 @@ def _load_rules() -> list[dict]:
     with open(_RULES_PATH, encoding="utf-8") as f:
         data = yaml.safe_load(f)
 
-    rules = data.get("rules", [])
+    rules: list[dict] = data.get("rules", [])
     logger.info("[Judge] Loaded {} guardrail rules from {}", len(rules), _RULES_PATH.name)
     return rules
 

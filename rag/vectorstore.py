@@ -24,7 +24,7 @@ CHROMA_PORT: int = int(os.getenv("CHROMA_PORT", "8100"))
 COLLECTION_NAME: str = "standard_clauses"
 
 
-def get_chroma_client() -> chromadb.HttpClient:
+def get_chroma_client() -> chromadb.ClientAPI:
     """
     Returns a ChromaDB HttpClient connected to the Docker container.
 
@@ -40,7 +40,7 @@ def get_chroma_client() -> chromadb.HttpClient:
 
 
 def get_or_create_collection(
-    client: chromadb.HttpClient | None = None,
+    client: chromadb.ClientAPI | None = None,
     collection_name: str = COLLECTION_NAME,
 ) -> chromadb.Collection:
     """
