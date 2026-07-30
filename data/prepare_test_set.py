@@ -24,7 +24,6 @@ from __future__ import annotations
 import json
 import os
 import re
-import sys
 
 from loguru import logger
 
@@ -38,15 +37,10 @@ TEST_END_INDEX: int = 55  # exclusive → 15 contracts
 TEST_SET_DIR: str = os.path.join(os.path.dirname(__file__), "test_set")
 
 # Path to the cached CUAD JSON (downloaded by rag/ingestion.py)
-CUAD_CACHE_PATH: str = os.path.join(
-    os.path.dirname(__file__), "..", "rag", ".cuad_cache.json"
-)
+CUAD_CACHE_PATH: str = os.path.join(os.path.dirname(__file__), "..", "rag", ".cuad_cache.json")
 
 # Also check direct download if cache is not in rag/
-CUAD_JSON_URL = (
-    "https://huggingface.co/datasets/theatticusproject/cuad/resolve/main/"
-    "CUAD_v1/CUAD_v1.json"
-)
+CUAD_JSON_URL = "https://huggingface.co/datasets/theatticusproject/cuad/resolve/main/CUAD_v1/CUAD_v1.json"
 
 
 def _sanitize_filename(name: str) -> str:
@@ -75,18 +69,14 @@ def _load_cuad_json() -> dict:
 
     if os.path.exists(cache_path):
         logger.info("Loading CUAD JSON from cache: {}", cache_path)
-        with open(cache_path, "r", encoding="utf-8") as f:
+        with open(cache_path, encoding="utf-8") as f:
             return json.load(f)
 
     logger.error(
-        "CUAD cache not found at {}. "
-        "Run 'uv run python -m rag.ingestion' first to download the dataset.",
+        "CUAD cache not found at {}. Run 'uv run python -m rag.ingestion' first to download the dataset.",
         cache_path,
     )
-    raise FileNotFoundError(
-        f"CUAD cache not found at {cache_path}. "
-        "Run 'uv run python -m rag.ingestion' first."
-    )
+    raise FileNotFoundError(f"CUAD cache not found at {cache_path}. Run 'uv run python -m rag.ingestion' first.")
 
 
 def _extract_ground_truth(contract: dict) -> dict:
@@ -127,9 +117,7 @@ def _extract_ground_truth(contract: dict) -> dict:
                 continue
 
             # Only take answers that have actual text
-            valid_answers = [
-                a for a in answers if a.get("text", "").strip()
-            ]
+            valid_answers = [a for a in answers if a.get("text", "").strip()]
             if not valid_answers:
                 continue
 
@@ -138,12 +126,14 @@ def _extract_ground_truth(contract: dict) -> dict:
             clause_text: str = answer["text"].strip()
             answer_start: int = answer.get("answer_start", -1)
 
-            ground_truth_clauses.append({
-                "clause_type": question,
-                "clause_text": clause_text,
-                "answer_start": answer_start,
-                "char_length": len(clause_text),
-            })
+            ground_truth_clauses.append(
+                {
+                    "clause_type": question,
+                    "clause_text": clause_text,
+                    "answer_start": answer_start,
+                    "char_length": len(clause_text),
+                }
+            )
 
             clause_type_counts[question] = clause_type_counts.get(question, 0) + 1
 
@@ -169,8 +159,7 @@ def prepare_test_set() -> int:
 
     if len(all_contracts) < TEST_END_INDEX:
         logger.warning(
-            "CUAD has only {} contracts, but TEST_END_INDEX is {}. "
-            "Using all available contracts after index {}.",
+            "CUAD has only {} contracts, but TEST_END_INDEX is {}. Using all available contracts after index {}.",
             len(all_contracts),
             TEST_END_INDEX,
             TEST_START_INDEX,
@@ -202,14 +191,16 @@ def prepare_test_set() -> int:
 
         total_clauses += ground_truth["total_ground_truth"]
 
-        manifest_entries.append({
-            "index": TEST_START_INDEX + i,
-            "title": title,
-            "filename": filename,
-            "total_ground_truth_clauses": ground_truth["total_ground_truth"],
-            "clause_types_found": list(ground_truth["clause_type_counts"].keys()),
-            "raw_text_length": len(ground_truth["raw_text"]),
-        })
+        manifest_entries.append(
+            {
+                "index": TEST_START_INDEX + i,
+                "title": title,
+                "filename": filename,
+                "total_ground_truth_clauses": ground_truth["total_ground_truth"],
+                "clause_types_found": list(ground_truth["clause_type_counts"].keys()),
+                "raw_text_length": len(ground_truth["raw_text"]),
+            }
+        )
 
         logger.info(
             "  [{}/{}] {} — {} ground-truth clauses",

@@ -21,39 +21,32 @@ CUAD_TO_SYSTEM_TYPE: dict[str, str] = {
     "Rofr/Rofo/Rofn": "termination",
     "Change Of Control": "termination",
     "Anti-Assignment": "termination",
-
     # ── Liability ────────────────────────────
     "Cap On Liability": "liability",
     "Limitation Of Liability": "liability",
     "Warranty Duration": "liability",
-
     # ── Confidentiality ──────────────────────
     "Post-Termination Services": "confidentiality",
     "Non-Disclosure Agreement": "confidentiality",
-
     # ── Non-Compete ──────────────────────────
     "Non-Compete": "non_compete",
     "Exclusivity": "non_compete",
     "No-Solicit Of Customers": "non_compete",
     "No-Solicit Of Employees": "non_compete",
     "Covenant Not To Sue": "non_compete",
-
     # ── Indemnification ──────────────────────
     "Uncapped Liability": "indemnification",
     "Insurance": "indemnification",
-
     # ── IP Ownership ─────────────────────────
     "Ip Ownership Assignment": "ip_ownership",
     "Joint Ip Ownership": "ip_ownership",
     "License Grant": "ip_ownership",
     "Non-Transferable License": "ip_ownership",
-
     # ── Governing Law ────────────────────────
     "Governing Law": "governing_law",
     "Jurisdiction": "governing_law",
     "Audit Rights": "governing_law",
     "Most Favored Nation": "governing_law",
-
     # ── Renewal ──────────────────────────────
     "Renewal Term": "renewal",
     "Auto-Renewal": "renewal",
@@ -61,11 +54,9 @@ CUAD_TO_SYSTEM_TYPE: dict[str, str] = {
     "Effective Date": "renewal",
     "Minimum Commitment": "renewal",
     "Volume Restriction": "renewal",
-
     # ── Penalty ──────────────────────────────
     "Liquidated Damages": "penalty",
     "Price Restrictions": "penalty",
-
     # ── Other ────────────────────────────────
     "Competitive Restriction Exception": "other",
     "Third Party Beneficiary": "other",

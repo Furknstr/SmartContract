@@ -26,21 +26,19 @@ import argparse
 import json
 import os
 import sys
-from dataclasses import dataclass, field, asdict
-from datetime import datetime
+from dataclasses import asdict, dataclass, field
+from datetime import datetime, timezone
 
 from loguru import logger
 
 from api.agents.graph import compiled_graph
-from evaluation.clause_type_map import normalize_clause_type, GUARDED_CLAUSE_TYPES
+from evaluation.clause_type_map import GUARDED_CLAUSE_TYPES, normalize_clause_type
 
 # ─────────────────────────────────────────────
 # Configuration
 # ─────────────────────────────────────────────
 
-TEST_SET_DIR: str = os.path.join(
-    os.path.dirname(__file__), "..", "data", "test_set"
-)
+TEST_SET_DIR: str = os.path.join(os.path.dirname(__file__), "..", "data", "test_set")
 RESULTS_DIR: str = os.path.join(os.path.dirname(__file__), "results")
 
 
@@ -189,9 +187,7 @@ def evaluate_contract(test_data: dict) -> ContractResult:
     system_types = _extract_system_clause_types(analyzed_risks)
 
     # Extract ground truth (normalized to system clause types)
-    ground_truth_types = _extract_ground_truth_types(
-        test_data.get("ground_truth_clauses", [])
-    )
+    ground_truth_types = _extract_ground_truth_types(test_data.get("ground_truth_clauses", []))
 
     # Calculate TP / FP / FN at the clause TYPE level
     true_positives = system_types & ground_truth_types
@@ -214,19 +210,13 @@ def evaluate_contract(test_data: dict) -> ContractResult:
 
     # Precision, recall, F1
     if result.true_positives + result.false_positives > 0:
-        result.precision = result.true_positives / (
-            result.true_positives + result.false_positives
-        )
+        result.precision = result.true_positives / (result.true_positives + result.false_positives)
 
     if result.true_positives + result.false_negatives > 0:
-        result.recall = result.true_positives / (
-            result.true_positives + result.false_negatives
-        )
+        result.recall = result.true_positives / (result.true_positives + result.false_negatives)
 
     if result.precision + result.recall > 0:
-        result.f1 = (
-            2 * result.precision * result.recall
-        ) / (result.precision + result.recall)
+        result.f1 = (2 * result.precision * result.recall) / (result.precision + result.recall)
 
     logger.info(
         "[Eval] {} → P={:.2f} R={:.2f} F1={:.2f} (TP={} FP={} FN={})",
@@ -256,13 +246,12 @@ def run_evaluation(limit: int | None = None) -> AggregateResult:
 
     if not os.path.exists(manifest_path):
         logger.error(
-            "Test set manifest not found at {}. "
-            "Run 'uv run python -m data.prepare_test_set' first.",
+            "Test set manifest not found at {}. Run 'uv run python -m data.prepare_test_set' first.",
             manifest_path,
         )
         sys.exit(1)
 
-    with open(manifest_path, "r", encoding="utf-8") as f:
+    with open(manifest_path, encoding="utf-8") as f:
         manifest = json.load(f)
 
     contracts = manifest.get("contracts", [])
@@ -289,7 +278,7 @@ def run_evaluation(limit: int | None = None) -> AggregateResult:
         sep = "=" * 60
         logger.info("\n{}\n[{}/{}] Evaluating: {}\n{}", sep, i + 1, len(contracts), entry["title"], sep)
 
-        with open(contract_path, "r", encoding="utf-8") as f:
+        with open(contract_path, encoding="utf-8") as f:
             test_data = json.load(f)
 
         result = evaluate_contract(test_data)
@@ -319,9 +308,9 @@ def run_evaluation(limit: int | None = None) -> AggregateResult:
         aggregate.macro_precision = precision_sum / valid_count
         aggregate.macro_recall = recall_sum / valid_count
         if aggregate.macro_precision + aggregate.macro_recall > 0:
-            aggregate.macro_f1 = (
-                2 * aggregate.macro_precision * aggregate.macro_recall
-            ) / (aggregate.macro_precision + aggregate.macro_recall)
+            aggregate.macro_f1 = (2 * aggregate.macro_precision * aggregate.macro_recall) / (
+                aggregate.macro_precision + aggregate.macro_recall
+            )
 
     # ── Micro-average (aggregate TP/FP/FN then calculate) ──
     tp_total = aggregate.total_true_positives
@@ -333,9 +322,9 @@ def run_evaluation(limit: int | None = None) -> AggregateResult:
     if tp_total + fn_total > 0:
         aggregate.micro_recall = tp_total / (tp_total + fn_total)
     if aggregate.micro_precision + aggregate.micro_recall > 0:
-        aggregate.micro_f1 = (
-            2 * aggregate.micro_precision * aggregate.micro_recall
-        ) / (aggregate.micro_precision + aggregate.micro_recall)
+        aggregate.micro_f1 = (2 * aggregate.micro_precision * aggregate.micro_recall) / (
+            aggregate.micro_precision + aggregate.micro_recall
+        )
 
     # ── Per-clause-type breakdown ──
     all_types = set(per_type_tp) | set(per_type_fp) | set(per_type_fn)
@@ -369,7 +358,7 @@ def _write_json_report(aggregate: AggregateResult) -> str:
     path = os.path.join(RESULTS_DIR, "evaluation_report.json")
 
     report = {
-        "generated_at": datetime.now(datetime.UTC).isoformat(),
+        "generated_at": datetime.now(timezone.utc).isoformat(),
         "total_contracts": aggregate.total_contracts,
         "contracts_with_errors": aggregate.contracts_with_errors,
         "aggregate_metrics": {
@@ -407,7 +396,7 @@ def _write_summary_markdown(aggregate: AggregateResult) -> str:
     lines: list[str] = [
         "# Evaluation Results — Smart Contract Audit System",
         "",
-        f"**Generated at:** {datetime.now(datetime.UTC).strftime('%Y-%m-%d %H:%M:%S UTC')}",
+        f"**Generated at:** {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S UTC')}",
         f"**Test contracts:** {aggregate.total_contracts}",
         f"**Contracts with errors:** {aggregate.contracts_with_errors}",
         "",
@@ -440,25 +429,25 @@ def _write_summary_markdown(aggregate: AggregateResult) -> str:
             f"| {metrics['recall']:.4f} | {metrics['f1']:.4f} |"
         )
 
-    lines.extend([
-        "",
-        "---",
-        "",
-        "## Per Contract Results",
-        "",
-        "| # | Contract | P | R | F1 | TP | FP | FN | Risk Score |",
-        "|---|----------|---|---|----|----|----|----|------------|",
-    ])
+    lines.extend(
+        [
+            "",
+            "---",
+            "",
+            "## Per Contract Results",
+            "",
+            "| # | Contract | P | R | F1 | TP | FP | FN | Risk Score |",
+            "|---|----------|---|---|----|----|----|----|------------|",
+        ]
+    )
 
     for i, contract in enumerate(aggregate.per_contract):
         error = contract.get("error")
         if error:
-            lines.append(
-                f"| {i+1} | {contract['title'][:40]} | — | — | — | — | — | — | ERROR: {error[:30]} |"
-            )
+            lines.append(f"| {i + 1} | {contract['title'][:40]} | — | — | — | — | — | — | ERROR: {error[:30]} |")
         else:
             lines.append(
-                f"| {i+1} | {contract['title'][:40]} "
+                f"| {i + 1} | {contract['title'][:40]} "
                 f"| {contract['precision']:.2f} | {contract['recall']:.2f} "
                 f"| {contract['f1']:.2f} | {contract['true_positives']} "
                 f"| {contract['false_positives']} | {contract['false_negatives']} "
@@ -481,7 +470,7 @@ def _print_console_summary(aggregate: AggregateResult) -> None:
     print(f"\n  Contracts evaluated: {aggregate.total_contracts}")
     print(f"  Contracts with errors: {aggregate.contracts_with_errors}")
     print(f"\n  {'Metric':<12} {'Micro':>10} {'Macro':>10}")
-    print(f"  {'-'*12} {'-'*10} {'-'*10}")
+    print(f"  {'-' * 12} {'-' * 10} {'-' * 10}")
     print(f"  {'Precision':<12} {aggregate.micro_precision:>10.4f} {aggregate.macro_precision:>10.4f}")
     print(f"  {'Recall':<12} {aggregate.micro_recall:>10.4f} {aggregate.macro_recall:>10.4f}")
     print(f"  {'F1 Score':<12} {aggregate.micro_f1:>10.4f} {aggregate.macro_f1:>10.4f}")
