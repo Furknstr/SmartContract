@@ -19,9 +19,7 @@ class ClauseRisk(BaseModel):
 
     clause_id: str = Field(..., description="Unique identifier assigned to the clause, e.g. 'clause_003'")
     clause_text: str = Field(..., description="Original text of the clause")
-    risk_level: Literal["low", "medium", "high"] = Field(
-        ..., description="Risk severity level: low | medium | high"
-    )
+    risk_level: Literal["low", "medium", "high"] = Field(..., description="Risk severity level: low | medium | high")
     explanation: str = Field(..., description="Explanation of why the risk was detected")
     recommendation: str = Field(..., description="Corrective recommendation presented to the user")
     matched_rule: str | None = Field(

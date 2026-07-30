@@ -20,7 +20,6 @@ from sqlalchemy import (
     ForeignKey,
     Integer,
     String,
-    Text,
 )
 from sqlalchemy.dialects.postgresql import JSON, UUID
 from sqlalchemy.orm import DeclarativeBase, relationship

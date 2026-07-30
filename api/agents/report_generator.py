@@ -15,6 +15,7 @@ Current: Validates analyzed_risks through the Pydantic schema and writes
 from __future__ import annotations
 
 from datetime import datetime
+
 from loguru import logger
 
 from api.schemas.contract_schema import ClauseRisk, ContractReport
@@ -38,9 +39,7 @@ def report_generator_node(state: dict) -> dict:
 
     # ── Pydantic Validation ───────────────────────────────────────────────────
     risky_clauses: list[ClauseRisk] = [
-        ClauseRisk(**risk)
-        for risk in analyzed_risks
-        if risk.get("risk_level") in ("medium", "high")
+        ClauseRisk(**risk) for risk in analyzed_risks if risk.get("risk_level") in ("medium", "high")
     ]
 
     high_count = sum(1 for r in risky_clauses if r.risk_level == "high")

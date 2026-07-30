@@ -120,11 +120,13 @@ def _query_chromadb(clause_text: str, top_k: int = RAG_TOP_K) -> list[dict]:
             docs = results["documents"][0]
             metas = results["metadatas"][0] if results.get("metadatas") else [{}] * len(docs)
 
-            for doc, meta in zip(docs, metas):
-                standard_clauses.append({
-                    "text": doc,
-                    "metadata": meta,
-                })
+            for doc, meta in zip(docs, metas):  # noqa: B905
+                standard_clauses.append(
+                    {
+                        "text": doc,
+                        "metadata": meta,
+                    }
+                )
 
         return standard_clauses
 
@@ -143,7 +145,7 @@ def _call_ollama(clause_text: str, standard_clauses: list[dict]) -> dict | None:
     # Format standard clauses for the prompt
     if standard_clauses:
         formatted_standards = "\n\n".join(
-            f"[Standard {i+1} — {sc['metadata'].get('clause_type', 'Unknown')}]\n{sc['text']}"
+            f"[Standard {i + 1} — {sc['metadata'].get('clause_type', 'Unknown')}]\n{sc['text']}"
             for i, sc in enumerate(standard_clauses)
         )
     else:
@@ -246,7 +248,7 @@ def risk_analyzer_node(state: dict) -> dict:
     """
     retry_count: int = state.get("retry_count", 0)
     previous_risks: list[dict] = state.get("analyzed_risks", [])
-    
+
     flagged_ids: set[str] = set()
 
     if retry_count == 0:
@@ -255,7 +257,7 @@ def risk_analyzer_node(state: dict) -> dict:
         feedback = state.get("judge_feedback", "")
         # Extract clause IDs like "clause_006" from the Judge's feedback
         flagged_ids = set(re.findall(r"clause_\d{3}", feedback))
-        
+
         logger.info(
             "[RiskAnalyzer] Re-analysis (attempt {}) — Judge feedback: {}",
             retry_count,
@@ -301,14 +303,12 @@ def risk_analyzer_node(state: dict) -> dict:
             prompt_text = clause_text
             if retry_count > 0 and clause_id in flagged_ids:
                 prompt_text += f"\n\n[CRITICAL JUDGE FEEDBACK TO FIX]: {feedback}"
-                
+
             analysis = _call_ollama(prompt_text, standard_clauses)
 
             if analysis is None and ollama_available is None:
                 ollama_available = False
-                logger.warning(
-                    "[RiskAnalyzer] Ollama unavailable. Falling back to keyword matching for all clauses."
-                )
+                logger.warning("[RiskAnalyzer] Ollama unavailable. Falling back to keyword matching for all clauses.")
             elif analysis is not None:
                 ollama_available = True
 
@@ -319,14 +319,16 @@ def risk_analyzer_node(state: dict) -> dict:
         else:
             matched_rule = f"llm_analysis::{analysis.get('clause_type', 'unknown')}"
 
-        analyzed_risks.append({
-            "clause_id": clause_id,
-            "clause_text": clause_text,
-            "risk_level": analysis["risk_level"],
-            "explanation": analysis["explanation"],
-            "recommendation": analysis["recommendation"],
-            "matched_rule": matched_rule,
-        })
+        analyzed_risks.append(
+            {
+                "clause_id": clause_id,
+                "clause_text": clause_text,
+                "risk_level": analysis["risk_level"],
+                "explanation": analysis["explanation"],
+                "recommendation": analysis["recommendation"],
+                "matched_rule": matched_rule,
+            }
+        )
 
     high_count = sum(1 for r in analyzed_risks if r["risk_level"] == "high")
     medium_count = sum(1 for r in analyzed_risks if r["risk_level"] == "medium")

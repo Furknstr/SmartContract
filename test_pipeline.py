@@ -1,5 +1,7 @@
 import json
+
 from api.agents.graph import compiled_graph
+
 
 def run_test():
     print("Starting local pipeline test...\n")
@@ -30,6 +32,7 @@ def run_test():
         print(json.dumps(report, indent=2, ensure_ascii=False))
     else:
         print("\nPipeline failed to generate a report.")
+
 
 if __name__ == "__main__":
     run_test()

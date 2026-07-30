@@ -17,11 +17,8 @@ If neither is provided, falls back to dummy text for backward compatibility.
 
 from __future__ import annotations
 
-import io
-
 import fitz  # PyMuPDF
 from loguru import logger
-
 
 # ── DUMMY FALLBACK (kept for backward compatibility with test_pipeline.py) ──
 _DUMMY_TEXT = (
@@ -46,7 +43,7 @@ def _extract_text_from_pdf(source: str | bytes) -> tuple[str, int]:
     Returns:
         Tuple of (extracted_text, page_count).
     """
-    if isinstance(source, bytes):
+    if isinstance(source, bytes):  # noqa: SIM108
         doc = fitz.open(stream=source, filetype="pdf")
     else:
         doc = fitz.open(source)

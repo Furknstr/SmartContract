@@ -14,12 +14,10 @@ Pipeline flow:
 
 from __future__ import annotations
 
-from typing import Annotated
-
 from langgraph.graph import END, StateGraph
-from typing_extensions import TypedDict
-
+from langgraph.graph.state import CompiledStateGraph
 from loguru import logger
+from typing import TypedDict
 
 from api.agents.clause_extractor import clause_extractor_node
 from api.agents.document_reader import document_reader_node
@@ -41,22 +39,22 @@ class AgentState(TypedDict):
 
     # Input
     document_name: str
-    file_bytes: bytes | None     # Raw PDF bytes from UploadFile (set by FastAPI endpoint)
-    file_path: str | None        # Local file path alternative (for testing)
-    raw_text: str                # Output of DocumentReader
+    file_bytes: bytes | None  # Raw PDF bytes from UploadFile (set by FastAPI endpoint)
+    file_path: str | None  # Local file path alternative (for testing)
+    raw_text: str  # Output of DocumentReader
 
     # Intermediate layers
-    clauses: list[dict]          # ClauseExtractor output: [{"clause_id": ..., "text": ...}, ...]
-    analyzed_risks: list[dict]   # RiskAnalyzer output: [{"clause_id": ..., "risk_level": ..., ...}, ...]
-    page_count: int              # Number of pages extracted by DocumentReader
+    clauses: list[dict]  # ClauseExtractor output: [{"clause_id": ..., "text": ...}, ...]
+    analyzed_risks: list[dict]  # RiskAnalyzer output: [{"clause_id": ..., "risk_level": ..., ...}, ...]
+    page_count: int  # Number of pages extracted by DocumentReader
 
     # Control flow
     validation_passed: bool  # Judge decision: True → generate report, False → re-analyse
-    retry_count: int         # Counter to prevent infinite loops
-    judge_feedback: str      # Feedback from Judge sent back to RiskAnalyzer (on loop)
+    retry_count: int  # Counter to prevent infinite loops
+    judge_feedback: str  # Feedback from Judge sent back to RiskAnalyzer (on loop)
 
     # Output
-    final_report: dict | None    # ReportGenerator output (Pydantic dict)
+    final_report: dict | None  # ReportGenerator output (Pydantic dict)
 
 
 # ─────────────────────────────────────────────
@@ -99,10 +97,10 @@ def route_after_judge(state: AgentState) -> str:
 # ─────────────────────────────────────────────
 
 
-def build_graph() -> StateGraph:
+def build_graph() -> CompiledStateGraph:
     """Builds and compiles the LangGraph pipeline."""
 
-    graph = StateGraph(AgentState)
+    graph = StateGraph(AgentState)  # type: ignore[type-var]
 
     # Register nodes
     graph.add_node("document_reader", document_reader_node)

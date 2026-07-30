@@ -117,10 +117,7 @@ def clause_extractor_node(state: dict) -> dict:
 
     clause_texts = _segment_into_clauses(raw_text)
 
-    clauses = [
-        {"clause_id": f"clause_{str(i + 1).zfill(3)}", "text": text}
-        for i, text in enumerate(clause_texts)
-    ]
+    clauses = [{"clause_id": f"clause_{str(i + 1).zfill(3)}", "text": text} for i, text in enumerate(clause_texts)]
 
     logger.info(
         "[ClauseExtractor] {} logical clause(s) extracted from {} characters of raw text.",

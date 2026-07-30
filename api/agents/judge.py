@@ -17,7 +17,6 @@ Validation checks:
 
 from __future__ import annotations
 
-import os
 from pathlib import Path
 
 import yaml
@@ -46,7 +45,7 @@ def _load_rules() -> list[dict]:
         )
         return []
 
-    with open(_RULES_PATH, "r", encoding="utf-8") as f:
+    with open(_RULES_PATH, encoding="utf-8") as f:
         data = yaml.safe_load(f)
 
     rules = data.get("rules", [])
@@ -119,21 +118,22 @@ def judge_node(state: dict) -> dict:
                     "[Judge] Missing clause detected: '{}' — adding as informational finding.",
                     rule_clause_type,
                 )
-                missing_clause_findings.append({
-                    "clause_id": f"missing_{rule_clause_type}",
-                    "clause_text": f"[MISSING] No {rule_clause_type} clause was found in this contract.",
-                    "risk_level": rule_severity,
-                    "explanation": rule_message,
-                    "recommendation": f"A {rule_clause_type} clause should be added to the contract.",
-                    "matched_rule": f"guardrail::{rule_id}",
-                })
+                missing_clause_findings.append(
+                    {
+                        "clause_id": f"missing_{rule_clause_type}",
+                        "clause_text": f"[MISSING] No {rule_clause_type} clause was found in this contract.",
+                        "risk_level": rule_severity,
+                        "explanation": rule_message,
+                        "recommendation": f"A {rule_clause_type} clause should be added to the contract.",
+                        "matched_rule": f"guardrail::{rule_id}",
+                    }
+                )
             continue
 
         # Check 2: Severity agreement
         # Find all analyzed risks that match this rule's clause_type
         matching_risks = [
-            r for r in analyzed_risks
-            if rule_clause_type in (r.get("matched_rule", "").split("::")[-1]).lower()
+            r for r in analyzed_risks if rule_clause_type in (r.get("matched_rule", "").split("::")[-1]).lower()
         ]
 
         for risk in matching_risks:
@@ -151,9 +151,7 @@ def judge_node(state: dict) -> dict:
     # Check 3: High-risk findings with no matched rule
     for risk in analyzed_risks:
         if risk["risk_level"] == "high" and risk.get("matched_rule") is None:
-            reanalysis_violations.append(
-                f"{risk['clause_id']}: High risk detected but no guardrail rule was matched."
-            )
+            reanalysis_violations.append(f"{risk['clause_id']}: High risk detected but no guardrail rule was matched.")
 
     # Merge missing clause findings into the analyzed_risks
     updated_risks = analyzed_risks + missing_clause_findings
@@ -183,4 +181,3 @@ def judge_node(state: dict) -> dict:
         "validation_passed": True,
         "judge_feedback": "",
     }
-

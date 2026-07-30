@@ -35,10 +35,7 @@ MAX_CONTRACTS: int = 40
 BATCH_SIZE: int = 50
 
 # Direct download URL for the CUAD v1 JSON (HuggingFace raw file)
-CUAD_JSON_URL = (
-    "https://huggingface.co/datasets/theatticusproject/cuad/resolve/main/"
-    "CUAD_v1/CUAD_v1.json"
-)
+CUAD_JSON_URL = "https://huggingface.co/datasets/theatticusproject/cuad/resolve/main/CUAD_v1/CUAD_v1.json"
 CUAD_CACHE_PATH = os.path.join(os.path.dirname(__file__), ".cuad_cache.json")
 
 
@@ -57,14 +54,14 @@ def _download_cuad_json() -> dict:
     """
     if os.path.exists(CUAD_CACHE_PATH):
         logger.info("Loading CUAD JSON from local cache: {}", CUAD_CACHE_PATH)
-        with open(CUAD_CACHE_PATH, "r", encoding="utf-8") as f:
+        with open(CUAD_CACHE_PATH, encoding="utf-8") as f:
             return json.load(f)
 
     logger.info("Downloading CUAD_v1.json from HuggingFace (~30MB)...")
     urllib.request.urlretrieve(CUAD_JSON_URL, CUAD_CACHE_PATH)
     logger.info("Download complete. Cached at: {}", CUAD_CACHE_PATH)
 
-    with open(CUAD_CACHE_PATH, "r", encoding="utf-8") as f:
+    with open(CUAD_CACHE_PATH, encoding="utf-8") as f:
         return json.load(f)
 
 

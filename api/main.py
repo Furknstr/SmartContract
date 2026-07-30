@@ -21,6 +21,7 @@ from pydantic import BaseModel
 
 from api.agents.graph import compiled_graph
 from api.schemas.contract_schema import ContractReport
+from langsmith_config import configure_langsmith
 
 # ─────────────────────────────────────────────
 # Loguru configuration
@@ -66,6 +67,7 @@ for _name in ("uvicorn", "uvicorn.error", "uvicorn.access", "fastapi"):
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Application startup and shutdown lifecycle events."""
+    configure_langsmith()
     logger.info("Smart Contract Audit API started.")
     yield
     logger.info("Smart Contract Audit API shutting down.")
@@ -192,8 +194,7 @@ async def upload_and_analyze(file: UploadFile = File(...)) -> AnalyzeResponse:
     response_model=AnalyzeResponse,
     summary="Analyse with dummy text",
     description=(
-        "Runs the LangGraph pipeline using built-in dummy text. "
-        "Use this endpoint for testing without uploading a file."
+        "Runs the LangGraph pipeline using built-in dummy text. Use this endpoint for testing without uploading a file."
     ),
 )
 async def analyze_document(request: AnalyzeRequest) -> AnalyzeResponse:
