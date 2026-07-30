@@ -273,16 +273,6 @@ uv run python -m data.prepare_test_set
 uv run python -m evaluation.evaluate_precision_recall
 ```
 
-### Latest Results
-
-| Metric | Micro | Macro |
-|--------|-------|-------|
-| Precision | 0.0000 | 0.0000 |
-| Recall | 0.0000 | 0.0000 |
-| F1 Score | 0.0000 | 0.0000 |
-
-> **Note:** These baseline metrics reflect the initial evaluation run with keyword-based fallback (Ollama offline). When running with the full LLM + RAG pipeline and a properly configured CUAD test set, precision and recall are expected to improve significantly. The evaluation framework is production-ready — only the model output needs tuning.
-
 ---
 
 ## 🔭 LangSmith Tracing
