@@ -52,7 +52,8 @@ def _extract_text_from_pdf(source: str | bytes) -> tuple[str, int]:
     empty_pages: list[int] = []
 
     for page_num, page in enumerate(doc, start=1):
-        text = page.get_text("text").strip()
+        raw_text = page.get_text("text")
+        text = raw_text.strip() if isinstance(raw_text, str) else ""
         if text:
             pages_text.append(text)
         else:

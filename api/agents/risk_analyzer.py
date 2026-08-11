@@ -259,6 +259,7 @@ def risk_analyzer_node(state: dict) -> dict:
     previous_risks: list[dict] = state.get("analyzed_risks", [])
 
     flagged_ids: set[str] = set()
+    feedback: str = ""
 
     if retry_count == 0:
         logger.info("[RiskAnalyzer] Agent running — starting initial analysis.")
