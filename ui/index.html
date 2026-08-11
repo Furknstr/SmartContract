@@ -1,0 +1,1293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Smart Contract Audit — AI-Powered Risk Analysis</title>
+    <meta name="description" content="Upload a PDF contract and get a detailed AI risk analysis in seconds, powered by LangGraph multi-agent orchestration." />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --bg:              #06060f;
+            --surface:         rgba(255,255,255,0.04);
+            --surface-hover:   rgba(255,255,255,0.07);
+            --border:          rgba(255,255,255,0.08);
+            --border-accent:   rgba(139,92,246,0.5);
+            --purple:          #8b5cf6;
+            --purple-light:    #a78bfa;
+            --blue:            #3b82f6;
+            --cyan:            #06b6d4;
+            --text:            #f1f5f9;
+            --text-2:          #94a3b8;
+            --text-3:          #475569;
+            --high:            #f87171;
+            --high-bg:         rgba(248,113,113,0.07);
+            --high-border:     rgba(248,113,113,0.22);
+            --medium:          #fbbf24;
+            --medium-bg:       rgba(251,191,36,0.07);
+            --medium-border:   rgba(251,191,36,0.22);
+            --low:             #34d399;
+            --low-bg:          rgba(52,211,153,0.07);
+            --low-border:      rgba(52,211,153,0.22);
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Animated mesh background */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background:
+                radial-gradient(ellipse 80% 60% at 15% 10%,  rgba(139,92,246,0.13) 0%, transparent 55%),
+                radial-gradient(ellipse 60% 50% at 85% 85%,  rgba(59,130,246,0.11) 0%, transparent 55%),
+                radial-gradient(ellipse 50% 40% at 50% 50%,  rgba(6,182,212,0.05)  0%, transparent 55%);
+            pointer-events: none;
+            z-index: 0;
+            animation: bgPulse 9s ease-in-out infinite alternate;
+        }
+
+        /* Subtle grid */
+        body::after {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background-image:
+                linear-gradient(rgba(255,255,255,0.018) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,0.018) 1px, transparent 1px);
+            background-size: 44px 44px;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        @keyframes bgPulse {
+            0%   { opacity: 0.5; }
+            100% { opacity: 1;   }
+        }
+
+        /* ─── SCREEN WRAPPER ─── */
+        .screen {
+            position: relative;
+            z-index: 1;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 44px 20px 60px;
+        }
+
+        .screen.hidden { display: none; }
+
+        /* ─── BRAND HEADER ─── */
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 56px;
+            text-decoration: none;
+            user-select: none;
+        }
+
+        .brand-icon {
+            width: 44px;
+            height: 44px;
+            background: linear-gradient(135deg, var(--purple), var(--blue));
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+            box-shadow: 0 0 24px rgba(139,92,246,0.4);
+        }
+
+        .brand-name {
+            font-size: 20px;
+            font-weight: 700;
+            letter-spacing: -0.3px;
+            background: linear-gradient(90deg, var(--purple-light), var(--cyan));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        /* ══════════════════════════
+           SCREEN 1 — UPLOAD
+        ══════════════════════════ */
+        .upload-hero {
+            text-align: center;
+            max-width: 540px;
+            margin-bottom: 40px;
+        }
+
+        .upload-hero h1 {
+            font-size: clamp(30px, 5vw, 50px);
+            font-weight: 800;
+            line-height: 1.15;
+            letter-spacing: -1.2px;
+            margin-bottom: 16px;
+            background: linear-gradient(135deg, #f1f5f9 30%, #94a3b8 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .upload-hero p {
+            font-size: 16px;
+            color: var(--text-2);
+            line-height: 1.65;
+        }
+
+        .upload-card {
+            width: 100%;
+            max-width: 540px;
+            background: var(--surface);
+            backdrop-filter: blur(28px);
+            -webkit-backdrop-filter: blur(28px);
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            padding: 36px;
+            box-shadow: 0 28px 64px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.03);
+        }
+
+        .upload-zone {
+            border: 2px dashed var(--border);
+            border-radius: 16px;
+            padding: 48px 32px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            position: relative;
+        }
+
+        .upload-zone:hover,
+        .upload-zone.drag-over {
+            border-color: var(--purple);
+            background: rgba(139,92,246,0.06);
+            transform: translateY(-2px);
+        }
+
+        .upload-zone.drag-over {
+            border-color: var(--cyan);
+            background: rgba(6,182,212,0.07);
+            box-shadow: 0 0 40px rgba(139,92,246,0.18);
+        }
+
+        .upload-zone input[type="file"] {
+            position: absolute;
+            inset: 0;
+            opacity: 0;
+            cursor: pointer;
+            font-size: 0;
+        }
+
+        .upload-icon {
+            width: 64px;
+            height: 64px;
+            margin: 0 auto 20px;
+            background: linear-gradient(135deg, rgba(139,92,246,0.18), rgba(59,130,246,0.18));
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 30px;
+            border: 1px solid rgba(139,92,246,0.28);
+            transition: transform 0.25s;
+        }
+
+        .upload-zone:hover .upload-icon,
+        .upload-zone.drag-over .upload-icon { transform: scale(1.08); }
+
+        .upload-zone h2 {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .upload-zone p {
+            font-size: 14px;
+            color: var(--text-2);
+        }
+
+        .browse-hint {
+            color: var(--purple-light);
+            font-weight: 600;
+        }
+
+        .file-hint {
+            margin-top: 8px;
+            font-size: 12px !important;
+            color: var(--text-3) !important;
+        }
+
+        /* File preview pill */
+        .file-preview {
+            margin-top: 18px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: rgba(139,92,246,0.08);
+            border: 1px solid rgba(139,92,246,0.22);
+            border-radius: 12px;
+            padding: 13px 15px;
+            transition: all 0.2s;
+        }
+
+        .file-preview.hidden { display: none; }
+
+        .fp-icon  { font-size: 22px; flex-shrink: 0; }
+        .fp-info  { flex: 1; min-width: 0; }
+
+        .fp-name {
+            font-size: 13px;
+            font-weight: 600;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .fp-size {
+            font-size: 11px;
+            color: var(--text-2);
+            margin-top: 2px;
+        }
+
+        .fp-remove {
+            width: 28px;
+            height: 28px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            background: transparent;
+            color: var(--text-2);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            transition: all 0.2s;
+            flex-shrink: 0;
+        }
+
+        .fp-remove:hover {
+            background: var(--high-bg);
+            border-color: var(--high-border);
+            color: var(--high);
+        }
+
+        /* Primary button */
+        .btn-primary {
+            width: 100%;
+            margin-top: 18px;
+            padding: 16px 24px;
+            background: linear-gradient(135deg, var(--purple), var(--blue));
+            color: #fff;
+            border: none;
+            border-radius: 14px;
+            font-family: 'Inter', sans-serif;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            letter-spacing: -0.2px;
+            transition: all 0.25s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-primary::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, transparent, rgba(255,255,255,0.1));
+            opacity: 0;
+            transition: opacity 0.25s;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 14px 40px rgba(139,92,246,0.45);
+        }
+
+        .btn-primary:hover:not(:disabled)::after { opacity: 1; }
+        .btn-primary:active:not(:disabled) { transform: translateY(0); }
+
+        .btn-primary:disabled {
+            opacity: 0.38;
+            cursor: not-allowed;
+        }
+
+        /* Tech badges */
+        .tech-badges {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin-top: 36px;
+        }
+
+        .badge {
+            padding: 6px 14px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 100px;
+            font-size: 12px;
+            color: var(--text-2);
+            font-weight: 500;
+            letter-spacing: 0.1px;
+        }
+
+        /* ══════════════════════════
+           SCREEN 2 — LOADING
+        ══════════════════════════ */
+        .loading-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            max-width: 420px;
+            width: 100%;
+        }
+
+        .loading-card {
+            width: 100%;
+            background: var(--surface);
+            backdrop-filter: blur(28px);
+            -webkit-backdrop-filter: blur(28px);
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            padding: 48px 40px;
+            box-shadow: 0 28px 64px rgba(0,0,0,0.55);
+        }
+
+        .spinner-wrap {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 28px;
+        }
+
+        .spinner {
+            width: 52px;
+            height: 52px;
+            border-radius: 50%;
+            border: 3px solid rgba(139,92,246,0.2);
+            border-top-color: var(--purple);
+            border-right-color: var(--blue);
+            animation: spin 0.9s linear infinite;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .loading-title {
+            font-size: 21px;
+            font-weight: 700;
+            text-align: center;
+            letter-spacing: -0.4px;
+            margin-bottom: 6px;
+        }
+
+        .loading-sub {
+            font-size: 13px;
+            color: var(--text-2);
+            text-align: center;
+            margin-bottom: 32px;
+        }
+
+        /* Steps */
+        .agent-steps { display: flex; flex-direction: column; }
+
+        .agent-step {
+            display: flex;
+            align-items: flex-start;
+            gap: 14px;
+            padding: 13px 0;
+            position: relative;
+        }
+
+        /* Vertical connector line */
+        .agent-step:not(:last-child)::after {
+            content: '';
+            position: absolute;
+            left: 19px;
+            top: 50px;
+            bottom: 0;
+            width: 2px;
+            background: var(--border);
+            transition: background 0.5s;
+        }
+
+        .agent-step.done:not(:last-child)::after {
+            background: rgba(52,211,153,0.35);
+        }
+
+        .step-icon-wrap {
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 17px;
+            background: var(--surface-hover);
+            border: 1px solid var(--border);
+            transition: all 0.4s ease;
+            position: relative;
+        }
+
+        .agent-step.active .step-icon-wrap {
+            background: rgba(139,92,246,0.14);
+            border-color: rgba(139,92,246,0.4);
+            box-shadow: 0 0 18px rgba(139,92,246,0.22);
+        }
+
+        .agent-step.done .step-icon-wrap {
+            background: rgba(52,211,153,0.1);
+            border-color: rgba(52,211,153,0.35);
+        }
+
+        .step-dot {
+            position: absolute;
+            top: -4px; right: -4px;
+            width: 13px; height: 13px;
+            border-radius: 50%;
+            background: var(--bg);
+            border: 2px solid var(--border);
+            transition: all 0.35s;
+        }
+
+        .agent-step.active .step-dot {
+            background: var(--purple);
+            border-color: var(--purple);
+            animation: dotPulse 1.4s ease-in-out infinite;
+        }
+
+        .agent-step.done .step-dot {
+            background: var(--low);
+            border-color: var(--low);
+        }
+
+        @keyframes dotPulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(139,92,246,0.7); }
+            50%       { box-shadow: 0 0 0 5px rgba(139,92,246,0); }
+        }
+
+        .step-info { flex: 1; padding-top: 9px; }
+
+        .step-label {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-3);
+            transition: color 0.3s;
+        }
+
+        .agent-step.active .step-label { color: var(--text); }
+        .agent-step.done  .step-label  { color: var(--low); }
+
+        .step-desc {
+            font-size: 11px;
+            color: var(--text-3);
+            margin-top: 2px;
+            transition: color 0.3s;
+        }
+
+        .agent-step.active .step-desc { color: var(--text-2); }
+
+        .elapsed {
+            text-align: center;
+            margin-top: 24px;
+            font-size: 12px;
+            color: var(--text-3);
+            font-variant-numeric: tabular-nums;
+        }
+
+        /* ══════════════════════════
+           SCREEN 3 — RESULTS
+        ══════════════════════════ */
+        .results-container {
+            width: 100%;
+            max-width: 860px;
+        }
+
+        .results-header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 16px;
+            margin-bottom: 28px;
+            flex-wrap: wrap;
+        }
+
+        .doc-title {
+            font-size: clamp(17px, 2.8vw, 24px);
+            font-weight: 700;
+            letter-spacing: -0.4px;
+            word-break: break-all;
+        }
+
+        .doc-meta {
+            font-size: 12px;
+            color: var(--text-3);
+            margin-top: 4px;
+        }
+
+        .btn-ghost {
+            padding: 10px 18px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            color: var(--text-2);
+            font-family: 'Inter', sans-serif;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+
+        .btn-ghost:hover {
+            background: var(--surface-hover);
+            border-color: rgba(255,255,255,0.14);
+            color: var(--text);
+        }
+
+        /* Stats row: gauge + 4 cards */
+        .stats-row {
+            display: grid;
+            grid-template-columns: auto 1fr;
+            gap: 16px;
+            margin-bottom: 28px;
+            align-items: stretch;
+        }
+
+        @media (max-width: 560px) {
+            .stats-row { grid-template-columns: 1fr; }
+        }
+
+        /* Gauge */
+        .gauge-wrap {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 24px 28px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            min-width: 170px;
+        }
+
+        .gauge-label {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-3);
+        }
+
+        .gauge-outer {
+            position: relative;
+            width: 120px;
+            height: 120px;
+        }
+
+        .gauge-outer svg { transform: rotate(-90deg); display: block; }
+
+        .gauge-center {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .gauge-value {
+            font-size: 28px;
+            font-weight: 800;
+            letter-spacing: -1.5px;
+            line-height: 1;
+        }
+
+        .gauge-value-sub {
+            font-size: 10px;
+            color: var(--text-3);
+            margin-top: 3px;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* Stat cards grid */
+        .stat-cards {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .stat-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 20px 22px;
+        }
+
+        .stat-num {
+            font-size: 34px;
+            font-weight: 800;
+            letter-spacing: -1.5px;
+            line-height: 1;
+        }
+
+        .stat-lbl {
+            font-size: 11px;
+            color: var(--text-3);
+            margin-top: 6px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.6px;
+        }
+
+        .stat-card.high   .stat-num { color: var(--high);   }
+        .stat-card.medium .stat-num { color: var(--medium); }
+        .stat-card.clean  .stat-num { color: var(--low);    }
+
+        /* Section header */
+        .section-title {
+            font-size: 17px;
+            font-weight: 700;
+            margin-bottom: 14px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .findings-count {
+            background: rgba(139,92,246,0.14);
+            color: var(--purple-light);
+            border-radius: 100px;
+            padding: 2px 10px;
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        /* Clause cards */
+        .clause-list { display: flex; flex-direction: column; gap: 10px; }
+
+        .clause-card {
+            background: var(--surface);
+            border-radius: 16px;
+            border: 1px solid var(--border);
+            overflow: hidden;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .clause-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 36px rgba(0,0,0,0.35);
+        }
+
+        .clause-card.high   { border-left: 3px solid var(--high);   background: var(--high-bg);   border-color: var(--high-border);   }
+        .clause-card.medium { border-left: 3px solid var(--medium); background: var(--medium-bg); border-color: var(--medium-border); }
+        .clause-card.low    { border-left: 3px solid var(--low);    background: var(--low-bg);    border-color: var(--low-border);    }
+
+        .clause-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            padding: 16px 18px 10px;
+        }
+
+        .clause-id-badge {
+            background: rgba(255,255,255,0.06);
+            border: 1px solid var(--border);
+            border-radius: 7px;
+            padding: 3px 9px;
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--text-2);
+            font-variant-numeric: tabular-nums;
+        }
+
+        .risk-badge {
+            padding: 3px 11px;
+            border-radius: 100px;
+            font-size: 11px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .risk-badge.high   { background: rgba(248,113,113,0.14); color: var(--high);   border: 1px solid rgba(248,113,113,0.28); }
+        .risk-badge.medium { background: rgba(251,191,36,0.14);  color: var(--medium); border: 1px solid rgba(251,191,36,0.28);  }
+        .risk-badge.low    { background: rgba(52,211,153,0.14);  color: var(--low);    border: 1px solid rgba(52,211,153,0.28);  }
+
+        .clause-body { padding: 0 18px 16px; }
+
+        .clause-text-block {
+            background: rgba(0,0,0,0.22);
+            border: 1px solid rgba(255,255,255,0.05);
+            border-radius: 10px;
+            padding: 12px 14px;
+            font-size: 12.5px;
+            color: var(--text-2);
+            line-height: 1.65;
+            font-style: italic;
+            margin-bottom: 12px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .clause-text-block.truncated { max-height: 68px; }
+
+        .clause-text-block.truncated::after {
+            content: '';
+            position: absolute;
+            bottom: 0; left: 0; right: 0;
+            height: 32px;
+            background: linear-gradient(transparent, rgba(8,8,18,0.92));
+        }
+
+        .expand-btn {
+            background: none;
+            border: none;
+            color: var(--purple-light);
+            font-size: 11px;
+            font-weight: 600;
+            cursor: pointer;
+            padding: 0;
+            margin-bottom: 12px;
+            font-family: 'Inter', sans-serif;
+            display: block;
+            transition: opacity 0.2s;
+        }
+
+        .expand-btn:hover { opacity: 0.75; }
+
+        .detail-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        @media (max-width: 500px) { .detail-grid { grid-template-columns: 1fr; } }
+
+        .detail-block {
+            background: rgba(0,0,0,0.18);
+            border-radius: 10px;
+            padding: 11px 13px;
+        }
+
+        .detail-label {
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            font-weight: 700;
+            color: var(--text-3);
+            margin-bottom: 5px;
+        }
+
+        .detail-text {
+            font-size: 12.5px;
+            color: var(--text-2);
+            line-height: 1.6;
+        }
+
+        .rule-tag {
+            margin-top: 10px;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            background: rgba(139,92,246,0.08);
+            border: 1px solid rgba(139,92,246,0.2);
+            border-radius: 7px;
+            padding: 4px 9px;
+            font-size: 10.5px;
+            color: var(--purple-light);
+            font-weight: 600;
+            font-family: 'Courier New', monospace;
+        }
+
+        /* Error card */
+        .error-card {
+            background: var(--high-bg);
+            border: 1px solid var(--high-border);
+            border-radius: 16px;
+            padding: 36px;
+            text-align: center;
+        }
+
+        .error-card h3 { color: var(--high); font-size: 18px; margin-bottom: 10px; }
+        .error-card p  { color: var(--text-2); font-size: 13.5px; line-height: 1.65; }
+        .error-card code { font-family: monospace; color: var(--purple-light); }
+
+        /* Animations */
+        .fade-in {
+            animation: fadeUp 0.45s ease both;
+        }
+
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(14px); }
+            to   { opacity: 1; transform: translateY(0);    }
+        }
+    </style>
+</head>
+<body>
+
+<!-- ════════════════════════════════════
+     SCREEN 1 — UPLOAD
+════════════════════════════════════ -->
+<section id="screen-upload" class="screen">
+    <div class="brand">
+        <div class="brand-icon">🔍</div>
+        <span class="brand-name">ContractAudit</span>
+    </div>
+
+    <div class="upload-hero">
+        <h1>AI-powered contract risk analysis</h1>
+        <p>Upload a PDF contract and receive a detailed risk report in seconds — powered by a 5-agent LangGraph pipeline running entirely on your machine.</p>
+    </div>
+
+    <div class="upload-card">
+        <div class="upload-zone" id="upload-zone">
+            <input type="file" id="file-input" accept=".pdf" />
+            <div class="upload-icon">📄</div>
+            <h2>Drop your contract here</h2>
+            <p>or <span class="browse-hint">click to browse</span></p>
+            <p class="file-hint">PDF files only · Processed locally</p>
+        </div>
+
+        <div class="file-preview hidden" id="file-preview">
+            <span class="fp-icon">📋</span>
+            <div class="fp-info">
+                <div class="fp-name" id="fp-name">—</div>
+                <div class="fp-size" id="fp-size">—</div>
+            </div>
+            <button class="fp-remove" id="fp-remove" title="Remove file">✕</button>
+        </div>
+
+        <button class="btn-primary" id="analyze-btn" disabled>
+            Analyse Contract →
+        </button>
+    </div>
+
+    <div class="tech-badges">
+        <span class="badge">🧠 LangGraph Agents</span>
+        <span class="badge">🔎 ChromaDB RAG</span>
+        <span class="badge">⚡ Ollama LLM</span>
+        <span class="badge">🛡️ Guardrails</span>
+        <span class="badge">🔒 100% Local</span>
+    </div>
+</section>
+
+<!-- ════════════════════════════════════
+     SCREEN 2 — LOADING
+════════════════════════════════════ -->
+<section id="screen-loading" class="screen hidden">
+    <div class="brand">
+        <div class="brand-icon">🔍</div>
+        <span class="brand-name">ContractAudit</span>
+    </div>
+
+    <div class="loading-content">
+        <div class="loading-card">
+            <div class="spinner-wrap"><div class="spinner"></div></div>
+            <div class="loading-title">Analysing your contract</div>
+            <div class="loading-sub">Our AI agents are working through your document…</div>
+
+            <div class="agent-steps" id="agent-steps">
+                <div class="agent-step" id="step-0">
+                    <div class="step-icon-wrap">📄<span class="step-dot"></span></div>
+                    <div class="step-info">
+                        <div class="step-label">DocumentReader</div>
+                        <div class="step-desc">Extracting text from PDF</div>
+                    </div>
+                </div>
+                <div class="agent-step" id="step-1">
+                    <div class="step-icon-wrap">✂️<span class="step-dot"></span></div>
+                    <div class="step-info">
+                        <div class="step-label">ClauseExtractor</div>
+                        <div class="step-desc">Splitting into logical clauses</div>
+                    </div>
+                </div>
+                <div class="agent-step" id="step-2">
+                    <div class="step-icon-wrap">🔎<span class="step-dot"></span></div>
+                    <div class="step-info">
+                        <div class="step-label">RiskAnalyzer</div>
+                        <div class="step-desc">LLM + RAG analysis per clause</div>
+                    </div>
+                </div>
+                <div class="agent-step" id="step-3">
+                    <div class="step-icon-wrap">⚖️<span class="step-dot"></span></div>
+                    <div class="step-info">
+                        <div class="step-label">Judge</div>
+                        <div class="step-desc">Validating against guardrail rules</div>
+                    </div>
+                </div>
+                <div class="agent-step" id="step-4">
+                    <div class="step-icon-wrap">📊<span class="step-dot"></span></div>
+                    <div class="step-info">
+                        <div class="step-label">ReportGenerator</div>
+                        <div class="step-desc">Building final report</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="elapsed" id="elapsed">0s elapsed</div>
+        </div>
+    </div>
+</section>
+
+<!-- ════════════════════════════════════
+     SCREEN 3 — RESULTS
+════════════════════════════════════ -->
+<section id="screen-results" class="screen hidden">
+    <div class="brand">
+        <div class="brand-icon">🔍</div>
+        <span class="brand-name">ContractAudit</span>
+    </div>
+
+    <div class="results-container fade-in">
+        <div class="results-header">
+            <div>
+                <div class="doc-title" id="res-name">—</div>
+                <div class="doc-meta"  id="res-meta">—</div>
+            </div>
+            <button class="btn-ghost" id="btn-reset">↩ Analyse another</button>
+        </div>
+
+        <div class="stats-row">
+            <!-- Gauge -->
+            <div class="gauge-wrap">
+                <div class="gauge-label">Overall Risk</div>
+                <div class="gauge-outer" id="gauge"></div>
+            </div>
+
+            <!-- 4 stat tiles -->
+            <div class="stat-cards">
+                <div class="stat-card">
+                    <div class="stat-num" id="s-total">—</div>
+                    <div class="stat-lbl">Total Clauses</div>
+                </div>
+                <div class="stat-card high">
+                    <div class="stat-num" id="s-high">—</div>
+                    <div class="stat-lbl">High Risk</div>
+                </div>
+                <div class="stat-card medium">
+                    <div class="stat-num" id="s-medium">—</div>
+                    <div class="stat-lbl">Medium Risk</div>
+                </div>
+                <div class="stat-card clean">
+                    <div class="stat-num" id="s-clean">—</div>
+                    <div class="stat-lbl">Low / Clean</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="section-title">
+            Risk Findings
+            <span class="findings-count" id="findings-count">0</span>
+        </div>
+
+        <div class="clause-list" id="clause-list"></div>
+    </div>
+</section>
+
+<!-- ════════════════════════════════════
+     JAVASCRIPT
+════════════════════════════════════ -->
+<script>
+'use strict';
+
+// ── State ──────────────────────────────
+let selectedFile = null;
+const API = window.location.origin;
+
+// ── Screen switching ────────────────────
+function show(id) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
+    document.getElementById(id).classList.remove('hidden');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// ── Upload screen ───────────────────────
+const uploadZone = document.getElementById('upload-zone');
+const fileInput  = document.getElementById('file-input');
+const filePreview = document.getElementById('file-preview');
+const fpName     = document.getElementById('fp-name');
+const fpSize     = document.getElementById('fp-size');
+const fpRemove   = document.getElementById('fp-remove');
+const analyzeBtn = document.getElementById('analyze-btn');
+
+function fmt(bytes) {
+    if (bytes < 1024)         return bytes + ' B';
+    if (bytes < 1048576)      return (bytes / 1024).toFixed(1) + ' KB';
+    return (bytes / 1048576).toFixed(2) + ' MB';
+}
+
+function setFile(f) {
+    if (!f) return;
+    if (!f.name.toLowerCase().endsWith('.pdf')) {
+        alert('Please select a PDF file.');
+        return;
+    }
+    selectedFile = f;
+    fpName.textContent = f.name;
+    fpSize.textContent = fmt(f.size);
+    filePreview.classList.remove('hidden');
+    analyzeBtn.disabled = false;
+}
+
+function clearFile() {
+    selectedFile = null;
+    fileInput.value = '';
+    filePreview.classList.add('hidden');
+    analyzeBtn.disabled = true;
+}
+
+fileInput.addEventListener('change', e => { if (e.target.files[0]) setFile(e.target.files[0]); });
+fpRemove.addEventListener('click', e => { e.stopPropagation(); clearFile(); });
+
+// Drag & drop
+uploadZone.addEventListener('dragover', e => {
+    e.preventDefault();
+    uploadZone.classList.add('drag-over');
+});
+['dragleave', 'dragend'].forEach(ev =>
+    uploadZone.addEventListener(ev, () => uploadZone.classList.remove('drag-over'))
+);
+uploadZone.addEventListener('drop', e => {
+    e.preventDefault();
+    uploadZone.classList.remove('drag-over');
+    setFile(e.dataTransfer.files[0]);
+});
+
+// ── Loading animation ───────────────────
+// Approximate cumulative seconds at which each step becomes "done"
+const STEP_THRESHOLDS = [3, 8, 45, 65, 75];
+let stepTimer = null, elapsedInterval = null, startTs = null;
+
+function startLoading() {
+    show('screen-loading');
+    for (let i = 0; i < 5; i++) {
+        const s = document.getElementById(`step-${i}`);
+        s.classList.remove('active', 'done');
+    }
+    document.getElementById('step-0').classList.add('active');
+    document.getElementById('elapsed').textContent = '0s elapsed';
+
+    startTs = Date.now();
+    let cur = 0;
+
+    elapsedInterval = setInterval(() => {
+        const secs = Math.round((Date.now() - startTs) / 1000);
+        document.getElementById('elapsed').textContent = `${secs}s elapsed`;
+    }, 500);
+
+    stepTimer = setInterval(() => {
+        const elapsed = (Date.now() - startTs) / 1000;
+        while (cur < 4 && elapsed >= STEP_THRESHOLDS[cur]) {
+            document.getElementById(`step-${cur}`).classList.replace('active', 'done');
+            cur++;
+            document.getElementById(`step-${cur}`).classList.add('active');
+        }
+    }, 400);
+}
+
+function stopLoading() {
+    clearInterval(stepTimer);
+    clearInterval(elapsedInterval);
+    for (let i = 0; i < 5; i++) {
+        const s = document.getElementById(`step-${i}`);
+        s.classList.remove('active');
+        s.classList.add('done');
+    }
+}
+
+// ── Gauge SVG ───────────────────────────
+function buildGauge(score) {
+    const R = 46, cx = 60, cy = 60;
+    const C = 2 * Math.PI * R;
+    const filled = Math.min(score, 1) * C;
+    const color = score < 0.3 ? '#34d399' : score < 0.6 ? '#fbbf24' : '#f87171';
+    const pct = Math.round(score * 100);
+
+    const wrap = document.getElementById('gauge');
+    wrap.innerHTML = `
+        <svg viewBox="0 0 120 120" width="120" height="120">
+            <circle cx="${cx}" cy="${cy}" r="${R}"
+                fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="10"/>
+            <circle cx="${cx}" cy="${cy}" r="${R}"
+                fill="none"
+                stroke="${color}"
+                stroke-width="10"
+                stroke-linecap="round"
+                stroke-dasharray="0 ${C}"
+                transform="rotate(-90 ${cx} ${cy})"
+                id="gauge-arc"
+                style="filter:drop-shadow(0 0 8px ${color}80);transition:stroke-dasharray 1.1s ease"/>
+        </svg>
+        <div class="gauge-center">
+            <span class="gauge-value" style="color:${color}">${pct}%</span>
+            <span class="gauge-value-sub">risk score</span>
+        </div>`;
+
+    // Animate after paint
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+        const arc = document.getElementById('gauge-arc');
+        if (arc) arc.style.strokeDasharray = `${filled} ${C}`;
+    }));
+}
+
+// ── Results rendering ───────────────────
+function renderResults(data) {
+    stopLoading();
+    const report = data.report;
+    show('screen-results');
+
+    document.getElementById('res-name').textContent = report.document_name || '—';
+    document.getElementById('res-meta').textContent =
+        'Analysed at ' + new Date(report.generated_at).toLocaleString();
+
+    buildGauge(report.overall_risk_score || 0);
+
+    const risky    = report.risky_clauses || [];
+    const highCnt  = risky.filter(r => r.risk_level === 'high').length;
+    const medCnt   = risky.filter(r => r.risk_level === 'medium').length;
+    const cleanCnt = Math.max(0, (report.total_clauses || 0) - risky.length);
+
+    document.getElementById('s-total').textContent  = report.total_clauses ?? '—';
+    document.getElementById('s-high').textContent   = highCnt;
+    document.getElementById('s-medium').textContent = medCnt;
+    document.getElementById('s-clean').textContent  = cleanCnt;
+    document.getElementById('findings-count').textContent = risky.length;
+
+    const list = document.getElementById('clause-list');
+    list.innerHTML = '';
+
+    if (risky.length === 0) {
+        list.innerHTML = `
+            <div class="stat-card" style="text-align:center;padding:44px 24px;">
+                <div style="font-size:42px;margin-bottom:14px">✅</div>
+                <div style="font-size:17px;font-weight:700;color:var(--low)">No risk findings</div>
+                <div style="font-size:13px;color:var(--text-3);margin-top:8px">All clauses appear standard and safe.</div>
+            </div>`;
+        return;
+    }
+
+    // Sort: high → medium → low
+    const order = { high: 0, medium: 1, low: 2 };
+    risky.sort((a, b) => (order[a.risk_level] ?? 3) - (order[b.risk_level] ?? 3));
+
+    risky.forEach((clause, idx) => {
+        const level  = clause.risk_level || 'low';
+        const isLong = (clause.clause_text || '').length > 190;
+        const tid    = `ct-${idx}`;
+        const eid    = `ex-${idx}`;
+
+        const card = document.createElement('div');
+        card.className = `clause-card ${level} fade-in`;
+        card.style.animationDelay = `${idx * 0.06}s`;
+
+        card.innerHTML = `
+            <div class="clause-head">
+                <span class="clause-id-badge">${esc(clause.clause_id || '—')}</span>
+                <span class="risk-badge ${level}">${level.toUpperCase()}</span>
+            </div>
+            <div class="clause-body">
+                <div class="clause-text-block${isLong ? ' truncated' : ''}" id="${tid}">
+                    "${esc(clause.clause_text || '—')}"
+                </div>
+                ${isLong ? `<button class="expand-btn" id="${eid}" onclick="toggleExpand('${tid}','${eid}')">Show full clause ↓</button>` : ''}
+                <div class="detail-grid">
+                    <div class="detail-block">
+                        <div class="detail-label">⚠️ Explanation</div>
+                        <div class="detail-text">${esc(clause.explanation || '—')}</div>
+                    </div>
+                    <div class="detail-block">
+                        <div class="detail-label">💡 Recommendation</div>
+                        <div class="detail-text">${esc(clause.recommendation || '—')}</div>
+                    </div>
+                </div>
+                ${clause.matched_rule ? `<div class="rule-tag">🔗 ${esc(clause.matched_rule)}</div>` : ''}
+            </div>`;
+
+        list.appendChild(card);
+    });
+}
+
+function esc(str) {
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+}
+
+function toggleExpand(tid, eid) {
+    const el  = document.getElementById(tid);
+    const btn = document.getElementById(eid);
+    const collapsed = el.classList.toggle('truncated');
+    btn.textContent = collapsed ? 'Show full clause ↓' : 'Show less ↑';
+}
+
+// ── Error display ───────────────────────
+function showError(filename, msg) {
+    stopLoading();
+    show('screen-results');
+    document.getElementById('res-name').textContent = filename || 'Analysis failed';
+    document.getElementById('res-meta').textContent = new Date().toLocaleString();
+    ['s-total','s-high','s-medium','s-clean'].forEach(id =>
+        document.getElementById(id).textContent = '—');
+    document.getElementById('findings-count').textContent = '0';
+    buildGauge(0);
+    document.getElementById('clause-list').innerHTML = `
+        <div class="error-card">
+            <h3>⚠️ Analysis failed</h3>
+            <p>${esc(msg)}</p>
+            <p style="margin-top:14px;font-size:12px;color:var(--text-3)">
+                Make sure the API server is running (<code>localhost:8000</code>) and
+                Ollama is available at <code>localhost:11434</code>.
+            </p>
+        </div>`;
+}
+
+// ── API call ────────────────────────────
+analyzeBtn.addEventListener('click', async () => {
+    if (!selectedFile) return;
+    startLoading();
+
+    const fd = new FormData();
+    fd.append('file', selectedFile);
+
+    try {
+        const res = await fetch(`${API}/upload-and-analyze`, { method: 'POST', body: fd });
+
+        if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            throw new Error(err.detail || `Server returned HTTP ${res.status}`);
+        }
+
+        renderResults(await res.json());
+
+    } catch (err) {
+        showError(selectedFile?.name, err.message);
+    }
+});
+
+// ── Reset ────────────────────────────────
+document.getElementById('btn-reset').addEventListener('click', () => {
+    clearFile();
+    show('screen-upload');
+});
+</script>
+</body>
+</html>

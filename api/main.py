@@ -14,14 +14,20 @@ from __future__ import annotations
 import logging
 import sys
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import FastAPI, File, HTTPException, UploadFile
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
 from loguru import logger
 from pydantic import BaseModel
 
 from api.agents.graph import compiled_graph
 from api.schemas.contract_schema import ContractReport
 from langsmith_config import configure_langsmith
+
+# Absolute path to the UI directory (works regardless of where uvicorn is launched)
+_UI_DIR = Path(__file__).resolve().parent.parent / "ui"
 
 # ─────────────────────────────────────────────
 # Loguru configuration
@@ -83,6 +89,15 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+# Allow the browser-based UI to call the API from any origin
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=False,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 
 # ─────────────────────────────────────────────
 # Request / Response schemas
@@ -134,7 +149,13 @@ def _run_pipeline(initial_state: dict) -> AnalyzeResponse:
 # ─────────────────────────────────────────────
 
 
-@app.get("/", summary="Health check")
+@app.get("/", include_in_schema=False)
+async def serve_ui() -> FileResponse:
+    """Serves the web UI (ui/index.html)."""
+    return FileResponse(_UI_DIR / "index.html", media_type="text/html")
+
+
+@app.get("/health", summary="Health check")
 async def health_check() -> dict:
     """Returns a simple status confirming the API is running."""
     return {"status": "ok", "message": "Smart Contract Audit API is running."}
