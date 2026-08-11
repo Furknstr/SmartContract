@@ -21,6 +21,7 @@ import httpx
 from dotenv import load_dotenv
 from loguru import logger
 
+from rag.reranker import rerank
 from rag.vectorstore import get_chroma_client, get_or_create_collection
 
 load_dotenv()
@@ -31,7 +32,8 @@ load_dotenv()
 
 OLLAMA_BASE_URL: str = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
 OLLAMA_MODEL: str = os.getenv("OLLAMA_MODEL", "qwen2.5:7b")
-RAG_TOP_K: int = 3  # Number of similar standard clauses to retrieve
+RAG_TOP_K_FETCH: int = 10   # Candidates retrieved from ChromaDB (wide net)
+RAG_TOP_K_RETURN: int = 3   # Candidates kept after cross-encoder reranking
 OLLAMA_TIMEOUT: float = 120.0  # Seconds — local LLM can be slow
 
 # ─────────────────────────────────────────────
@@ -95,9 +97,17 @@ _RISK_KEYWORDS: dict[str, tuple[str, str, str]] = {
 }
 
 
-def _query_chromadb(clause_text: str, top_k: int = RAG_TOP_K) -> list[dict]:
+def _query_chromadb(
+    clause_text: str,
+    top_k_fetch: int = RAG_TOP_K_FETCH,
+    top_k_return: int = RAG_TOP_K_RETURN,
+) -> list[dict]:
     """
-    Queries ChromaDB for the most similar standard clauses.
+    Queries ChromaDB for the most similar standard clauses, then reranks them.
+
+    Two-stage retrieval:
+      1. Vector similarity  → fetch top_k_fetch candidates (fast, wide net)
+      2. Cross-Encoder      → rerank and keep only top_k_return (precise, small set)
 
     Returns a list of dicts with 'text' and 'metadata' keys.
     Returns an empty list if ChromaDB is unreachable.
@@ -110,26 +120,24 @@ def _query_chromadb(clause_text: str, top_k: int = RAG_TOP_K) -> list[dict]:
             logger.warning("[RiskAnalyzer] ChromaDB collection is empty. Skipping RAG.")
             return []
 
+        # Stage 1: vector similarity — cast a wide net
+        n_results = min(top_k_fetch, collection.count())
         results = collection.query(
             query_texts=[clause_text],
-            n_results=top_k,
+            n_results=n_results,
         )
 
-        standard_clauses = []
+        candidates: list[dict] = []
         if results and results.get("documents") is not None:
             docs: list[str] = results["documents"][0]  # type: ignore[index]
             raw_metas = results.get("metadatas")
             metas = raw_metas[0] if raw_metas is not None else [{}] * len(docs)  # type: ignore[index]
 
             for doc, meta in zip(docs, metas):  # noqa: B905
-                standard_clauses.append(
-                    {
-                        "text": doc,
-                        "metadata": meta,
-                    }
-                )
+                candidates.append({"text": doc, "metadata": meta})
 
-        return standard_clauses
+        # Stage 2: cross-encoder reranking — precision filter
+        return rerank(clause_text, candidates, top_k=top_k_return)
 
     except Exception as e:
         logger.warning("[RiskAnalyzer] ChromaDB query failed: {}. Proceeding without RAG.", e)
