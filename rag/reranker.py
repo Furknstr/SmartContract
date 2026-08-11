@@ -54,8 +54,7 @@ def _load_model():
         from sentence_transformers import CrossEncoder  # noqa: PLC0415
 
         logger.info(
-            "[Reranker] Loading model: {} "
-            "(first-time use will download ~270 MB — subsequent starts are instant)",
+            "[Reranker] Loading model: {} (first-time use will download ~270 MB — subsequent starts are instant)",
             _MODEL_NAME,
         )
         _model = CrossEncoder(_MODEL_NAME, max_length=512)
@@ -71,8 +70,7 @@ def _load_model():
 
     except Exception as e:
         logger.warning(
-            "[Reranker] Failed to load model '{}': {}. "
-            "Falling back to vector-similarity order.",
+            "[Reranker] Failed to load model '{}': {}. Falling back to vector-similarity order.",
             _MODEL_NAME,
             e,
         )
@@ -122,11 +120,10 @@ def rerank(query: str, candidates: list[dict], top_k: int = 3) -> list[dict]:
         ranked = sorted(zip(scores, candidates, strict=False), key=lambda x: x[0], reverse=True)
         result = [c for _, c in ranked[:top_k]]
 
-        best_score  = ranked[0][0]  if ranked else 0.0
+        best_score = ranked[0][0] if ranked else 0.0
         worst_score = ranked[-1][0] if ranked else 0.0
         logger.info(
-            "[Reranker] Re-ranked {} → {} candidates "
-            "(scores: best={:.4f}, {}th={:.4f})",
+            "[Reranker] Re-ranked {} → {} candidates (scores: best={:.4f}, {}th={:.4f})",
             len(candidates),
             len(result),
             best_score,
@@ -137,8 +134,7 @@ def rerank(query: str, candidates: list[dict], top_k: int = 3) -> list[dict]:
 
     except Exception as e:
         logger.warning(
-            "[Reranker] Reranking failed: {}. "
-            "Returning top-{} candidates in vector-similarity order.",
+            "[Reranker] Reranking failed: {}. Returning top-{} candidates in vector-similarity order.",
             e,
             top_k,
         )

@@ -32,8 +32,8 @@ load_dotenv()
 
 OLLAMA_BASE_URL: str = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
 OLLAMA_MODEL: str = os.getenv("OLLAMA_MODEL", "qwen2.5:7b")
-RAG_TOP_K_FETCH: int = 10   # Candidates retrieved from ChromaDB (wide net)
-RAG_TOP_K_RETURN: int = 3   # Candidates kept after cross-encoder reranking
+RAG_TOP_K_FETCH: int = 10  # Candidates retrieved from ChromaDB (wide net)
+RAG_TOP_K_RETURN: int = 3  # Candidates kept after cross-encoder reranking
 OLLAMA_TIMEOUT: float = 120.0  # Seconds — local LLM can be slow
 
 # ─────────────────────────────────────────────
