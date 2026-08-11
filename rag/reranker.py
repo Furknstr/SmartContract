@@ -119,7 +119,7 @@ def rerank(query: str, candidates: list[dict], top_k: int = 3) -> list[dict]:
         raw_scores = model.predict(pairs)  # type: ignore[union-attr]
         scores: list[float] = raw_scores.tolist() if hasattr(raw_scores, "tolist") else list(raw_scores)
 
-        ranked = sorted(zip(scores, candidates), key=lambda x: x[0], reverse=True)
+        ranked = sorted(zip(scores, candidates, strict=False), key=lambda x: x[0], reverse=True)
         result = [c for _, c in ranked[:top_k]]
 
         best_score  = ranked[0][0]  if ranked else 0.0
